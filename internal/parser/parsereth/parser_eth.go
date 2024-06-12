@@ -3,9 +3,11 @@ package parsereth
 import (
 	"context"
 	"log"
+	"sync"
 	"time"
 
 	"github.com/go_ether_parser/internal/blockchain"
+	"github.com/go_ether_parser/internal/config"
 	"github.com/go_ether_parser/internal/parser"
 	"github.com/go_ether_parser/internal/rpcclient"
 	"github.com/go_ether_parser/internal/storageengine"
@@ -22,7 +24,7 @@ func NewEthParser(storage storageengine.StorageEngine) *EthParser {
 		storage:    storage,
 		updateFreq: 5 * time.Second,
 		client: *blockchain.NewEthBlockchainClient(
-			rpcclient.NewRpcClient("https://cloudflare-eth.com"),
+			rpcclient.NewRpcClient(config.Cfg.ClientURLs.EthRpcClientURL),
 		),
 	}
 }
@@ -47,7 +49,9 @@ func (e *EthParser) parseBlock(blockNumber string) {
 
 	for _, tx := range txs {
 		e.storage.AddTransaction(tx.From, tx)
-		e.storage.AddTransaction(tx.To, tx)
+		if tx.From != tx.To {
+			e.storage.AddTransaction(tx.To, tx)
+		}
 	}
 }
 
@@ -67,7 +71,9 @@ func (e *EthParser) GetStorage() interface{} {
 	return e.storage.GetEntireStorage()
 }
 
-func (e *EthParser) Start(ctx context.Context) {
+func (e *EthParser) Start(ctx context.Context, wg *sync.WaitGroup) {
+	wg.Add(1)
+	defer wg.Done()
 	for {
 		select {
 		case <-ctx.Done():

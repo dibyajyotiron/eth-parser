@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/go_ether_parser/internal/manager"
+	"github.com/go_ether_parser/internal/parser"
 )
 
 type HttpError struct {
@@ -15,12 +15,12 @@ type HttpError struct {
 var METHOD_NOT_ALLOWED = &HttpError{"Method not allowed"}
 
 type Handler struct {
-	manager manager.Manager
-	wg      *sync.WaitGroup
+	parser parser.Parser
+	wg     *sync.WaitGroup
 }
 
-func NewHandler(manager manager.Manager, wg *sync.WaitGroup) *Handler {
-	return &Handler{manager: manager, wg: wg}
+func NewHandler(parser parser.Parser, wg *sync.WaitGroup) *Handler {
+	return &Handler{parser: parser, wg: wg}
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -54,34 +54,41 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *Handler) getCurrentBlock(w http.ResponseWriter, r *http.Request) {
-	block := h.manager.GetCurrentBlock()
+func (h *Handler) wrapSuccessResponse(data interface{}) BaseApiSuccessResponse {
+	return BaseApiSuccessResponse{
+		Success: true,
+		Data:    data,
+	}
+}
+
+func (h *Handler) getCurrentBlock(w http.ResponseWriter, _ *http.Request) {
+	block := h.parser.GetCurrentBlock()
 	w.Header().Set("Content-Type", "application/json") // setting content type as without this, postman always displays output json as text
-	json.NewEncoder(w).Encode(map[string]string{"current_block": block})
+	json.NewEncoder(w).Encode(h.wrapSuccessResponse(block))
 }
 
 func (h *Handler) subscribe(w http.ResponseWriter, r *http.Request) {
-	var req struct {
-		Address string `json:"address"`
-	}
+	var req SubscribeRequest
 	json.NewDecoder(r.Body).Decode(&req)
-	success := h.manager.Subscribe(req.Address)
+	isSubscribed := h.parser.Subscribe(req.Address)
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]bool{"subscribed": success})
+	json.NewEncoder(w).Encode(h.wrapSuccessResponse(SubscribeResponse{
+		Subscribed: isSubscribed,
+	}))
 }
 
 func (h *Handler) getTransactions(w http.ResponseWriter, r *http.Request) {
-	var req struct {
-		Address string `json:"address"`
-	}
+	var req GetTransactionsRequest
 	json.NewDecoder(r.Body).Decode(&req)
-	transactions := h.manager.GetTransactions(req.Address)
+	transactions := h.parser.GetTransactions(req.Address)
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(transactions)
+	json.NewEncoder(w).Encode(h.wrapSuccessResponse(GetTransactionsResponse{
+		Transactions: transactions,
+	}))
 }
 
-func (h *Handler) getStorage(w http.ResponseWriter, r *http.Request) {
-	storage := h.manager.GetStorage()
+func (h *Handler) getStorage(w http.ResponseWriter, _ *http.Request) {
+	storage := h.parser.GetStorage()
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(storage)
+	json.NewEncoder(w).Encode(h.wrapSuccessResponse(map[string]interface{}{"storage": storage}))
 }

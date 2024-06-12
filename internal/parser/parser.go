@@ -1,6 +1,9 @@
 package parser
 
-import "context"
+import (
+	"context"
+	"sync"
+)
 
 type Transaction struct {
 	Hash        string
@@ -16,5 +19,5 @@ type Parser interface {
 	GetCurrentBlock() string
 	Subscribe(address string) bool
 	GetTransactions(address string) []Transaction
-	Start(ctx context.Context)
+	Start(ctx context.Context, wg *sync.WaitGroup)
 }

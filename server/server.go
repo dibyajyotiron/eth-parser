@@ -10,7 +10,7 @@ import (
 	"syscall"
 
 	"github.com/go_ether_parser/internal/api"
-	"github.com/go_ether_parser/internal/manager"
+	"github.com/go_ether_parser/internal/parser"
 )
 
 type Server struct {
@@ -18,8 +18,8 @@ type Server struct {
 	wg         *sync.WaitGroup
 }
 
-func NewServer(manager manager.Manager, wg *sync.WaitGroup) *Server {
-	handler := api.NewHandler(manager, wg)
+func NewServer(parser parser.Parser, wg *sync.WaitGroup) *Server {
+	handler := api.NewHandler(parser, wg)
 	httpServer := &http.Server{
 		Handler: handler,
 	}
