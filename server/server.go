@@ -28,6 +28,8 @@ func NewServer(parser parser.Parser, wg *sync.WaitGroup) *Server {
 }
 
 func (s *Server) Start(addr string) error {
+	s.wg.Add(1)
+	defer s.wg.Done()
 	s.httpServer.Addr = addr
 	return s.httpServer.ListenAndServe()
 }
@@ -44,6 +46,5 @@ func (s *Server) checkForStopSignal(cancelFunc context.CancelFunc) {
 func (s *Server) Shutdown(ctx context.Context, cancelFunc context.CancelFunc) error {
 	s.checkForStopSignal(cancelFunc)
 	s.httpServer.SetKeepAlivesEnabled(false)
-	s.wg.Wait()
 	return s.httpServer.Shutdown(context.Background())
 }

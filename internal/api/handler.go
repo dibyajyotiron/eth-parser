@@ -16,17 +16,13 @@ var METHOD_NOT_ALLOWED = &HttpError{"Method not allowed"}
 
 type Handler struct {
 	parser parser.Parser
-	wg     *sync.WaitGroup
 }
 
 func NewHandler(parser parser.Parser, wg *sync.WaitGroup) *Handler {
-	return &Handler{parser: parser, wg: wg}
+	return &Handler{parser: parser}
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	h.wg.Add(1)
-	defer h.wg.Done()
-
 	switch r.URL.Path {
 	case "/current_block":
 		if r.Method == http.MethodGet {

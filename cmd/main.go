@@ -38,5 +38,7 @@ func main() {
 	if err := srv.Shutdown(ctx, cancelFunc); err != nil {
 		log.Fatalf("could not gracefully shut down the server: %s", err)
 	}
+
+	wg.Wait()
 	log.Println("Server gracefully stopped")
 }
